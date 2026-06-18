@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #111114;
+        --surface: #1a1a1f;
+        --key-default: #242429;
+        --key-action: #2e2e35;
+        --key-op: #2a2a35;
+        --key-equals: #5b5af8;
+        --key-equals-hover: #4e4de0;
+        --text: #f0eff8;
+        --muted: #6b6a7a;
+        --accent: #5b5af8;
+        --op-color: #a09ff8;
+        --font: "Inter", sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        font-family: var(--font);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .calc {
+        width: 310px;
+        background: var(--surface);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow:
+          0 40px 80px rgba(0, 0, 0, 0.6),
+          0 0 0 1px rgba(255, 255, 255, 0.05),
+          inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+
+      /* ── Display ── */
+      .display {
+        padding: 28px 24px 20px;
+        text-align: right;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        position: relative;
+        background: linear-gradient(160deg, #1f1f27 0%, #1a1a1f 100%);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      }
+
+      .history {
+        font-size: 12px;
+        color: var(--muted);
+        min-height: 18px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-bottom: 6px;
+        font-variant-numeric: tabular-nums;
+        transition: color 0.2s;
+      }
+
+      .result {
+        font-size: 44px;
+        font-weight: 300;
+        color: var(--text);
+        line-height: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        letter-spacing: -1.5px;
+        transition: font-size 0.1s;
+        font-variant-numeric: tabular-nums;
+      }
+      .result.error {
+        font-size: 22px;
+        color: #f87171;
+        letter-spacing: 0;
+      }
+
+      /* ── Keypad ── */
+      .keypad {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        padding: 16px;
+        background: var(--bg);
+      }
+
+      .key {
+        height: 64px;
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: 400;
+        font-family: var(--font);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.1s;
+        user-select: none;
+        position: relative;
+        overflow: hidden;
+      }
+      .key::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0);
+        transition: background 0.1s;
+        border-radius: inherit;
+      }
+      .key:hover::after {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .key:active {
+        transform: scale(0.93);
+      }
+      .key:active::after {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      /* Default number keys */
+      .key-num {
+        background: var(--key-default);
+        color: var(--text);
+        box-shadow:
+          0 2px 0 rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+
+      /* Action keys: AC, +/−, % */
+      .key-action {
+        background: var(--key-action);
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow:
+          0 2px 0 rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+
+      /* Operator keys */
+      .key-op {
+        background: var(--key-op);
+        color: var(--op-color);
+        font-size: 22px;
+        font-weight: 300;
+        box-shadow:
+          0 2px 0 rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+      .key-op.active-op {
+        background: var(--op-color);
+        color: #fff;
+      }
+
+      /* Equals */
+      .key-equals {
+        background: var(--key-equals);
+        color: #fff;
+        font-size: 22px;
+        font-weight: 400;
+        box-shadow:
+          0 2px 0 rgba(0, 0, 0, 0.4),
+          0 0 20px rgba(91, 90, 248, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      }
+      .key-equals:hover::after {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      /* Zero spans 2 columns, left-aligned */
+      .key-zero {
+        grid-column: span 2;
+        justify-content: flex-start;
+        padding-left: 24px;
+        font-size: 18px;
+      }
+
+      /* Footer hint */
+      .kb-hint {
+        text-align: center;
+        font-size: 10px;
+        color: var(--muted);
+        padding: 10px 16px 14px;
+        background: var(--bg);
+        letter-spacing: 0.2px;
+        opacity: 0.7;
+      }
+      kbd {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 1px 4px;
+        font-size: 9px;
+        font-family: var(--font);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="calc" role="application" aria-label="Calculator">
+      <div class="display">
+        <div class="history" id="history" aria-live="polite"></div>
+        <div class="result" id="result" aria-live="assertive">0</div>
+      </div>
+
+      <div class="keypad" id="keypad">
+        <!-- Row 1 -->
+        <button class="key key-action" data-action="clear">AC</button>
+        <button class="key key-action" data-action="sign">+/−</button>
+        <button class="key key-action" data-action="percent">%</button>
+        <button class="key key-op" data-op="÷">÷</button>
+        <!-- Row 2 -->
+        <button class="key key-num" data-num="7">7</button>
+        <button class="key key-num" data-num="8">8</button>
+        <button class="key key-num" data-num="9">9</button>
+        <button class="key key-op" data-op="×">×</button>
+        <!-- Row 3 -->
+        <button class="key key-num" data-num="4">4</button>
+        <button class="key key-num" data-num="5">5</button>
+        <button class="key key-num" data-num="6">6</button>
+        <button class="key key-op" data-op="−">−</button>
+        <!-- Row 4 -->
+        <button class="key key-num" data-num="1">1</button>
+        <button class="key key-num" data-num="2">2</button>
+        <button class="key key-num" data-num="3">3</button>
+        <button class="key key-op" data-op="+">+</button>
+        <!-- Row 5 -->
+        <button class="key key-num key-zero" data-num="0">0</button>
+        <button class="key key-num" data-num=".">.</button>
+        <button class="key key-equals" data-action="equals">=</button>
+      </div>
+
+      <div class="kb-hint">
+        <kbd>Enter</kbd> = &nbsp; <kbd>Esc</kbd> AC &nbsp;
+        <kbd>⌫</kbd> backspace
+      </div>
+    </div>
+
+    <script>
+      // ── State ──────────────────────────────────────────────────────
+      let current = "0"; // currently displayed number (string)
+      let prev = ""; // number before operator
+      let op = null; // pending operator
+      let justCalc = false; // true right after = pressed
+      // ──────────────────────────────────────────────────────────────
+
+      const resEl = document.getElementById("result");
+      const histEl = document.getElementById("history");
+
+      // Format a number string for display (avoid JS float junk)
+      function fmtNum(s) {
+        const n = parseFloat(s);
+        if (isNaN(n)) return s;
+        // Trim floating point noise using toPrecision, but toString avoids trailing zeros
+        const clean = parseFloat(n.toPrecision(12)).toString();
+        return clean.length > 14 ? n.toExponential(6) : clean;
+      }
+
+      function updateDisplay() {
+        resEl.className = "result";
+        const txt = fmtNum(current);
+        resEl.textContent = txt;
+        // Shrink font dynamically
+        if (txt.length > 14) resEl.style.fontSize = "22px";
+        else if (txt.length > 10) resEl.style.fontSize = "30px";
+        else if (txt.length > 7) resEl.style.fontSize = "38px";
+        else resEl.style.fontSize = "44px";
+      }
+
+      function compute(a, b, o) {
+        a = parseFloat(a);
+        b = parseFloat(b);
+        if (o === "÷") {
+          return b === 0 ? "Error" : a / b;
+        }
+        if (o === "×") return a * b;
+        if (o === "−") return a - b;
+        if (o === "+") return a + b;
+        return b;
+      }
+
+      // ── Number input ───────────────────────────────────────────────
+      function pressNum(n) {
+        // BUG FIX: after = was pressed, start fresh number
+        if (justCalc) {
+          current = "0";
+          justCalc = false;
+        }
+
+        if (n === "." && current.includes(".")) return;
+        if (n === "." && current === "0") {
+          current = "0.";
+          updateDisplay();
+          return;
+        }
+        if (n !== "." && current === "0") {
+          current = n;
+        } else if (current.replace("-", "").length < 15) {
+          current += n;
+        }
+        updateDisplay();
+      }
+
+      // ── Operator ───────────────────────────────────────────────────
+      function pressOp(o) {
+        // BUG FIX: Remove the `&& !justCalc` condition — chained ops must still compute
+        if (prev !== "" && op !== null && !justCalc) {
+          const r = compute(prev, current, op);
+          if (r === "Error") {
+            showError();
+            return;
+          }
+          current = parseFloat(r.toPrecision(12)).toString();
+          updateDisplay();
+        }
+        justCalc = false; // BUG FIX: reset so the next pressOp can chain correctly
+        prev = current;
+        op = o;
+        current = "0";
+        histEl.textContent = fmtNum(prev) + " " + op;
+        highlightOp(o);
+      }
+
+      // ── Equals ─────────────────────────────────────────────────────
+      function pressEquals() {
+        if (!op || prev === "") return;
+        const r = compute(prev, current, op);
+        if (r === "Error") {
+          showError();
+          return;
+        }
+        histEl.textContent =
+          fmtNum(prev) + " " + op + " " + fmtNum(current) + " =";
+        current = parseFloat(r.toPrecision(12)).toString();
+        op = null;
+        prev = "";
+        justCalc = true;
+        updateDisplay();
+        clearOpHighlight();
+      }
+
+      // ── Actions ────────────────────────────────────────────────────
+      function pressAction(a) {
+        if (a === "clear") {
+          current = "0";
+          prev = "";
+          op = null;
+          histEl.textContent = "";
+          justCalc = false;
+          updateDisplay();
+          clearOpHighlight();
+        } else if (a === "sign") {
+          // BUG FIX: guard against "Error" state and edge cases
+          if (current === "Error" || current === "0") return;
+          current = (parseFloat(current) * -1).toString();
+          updateDisplay();
+        } else if (a === "percent") {
+          if (current === "Error") return;
+          current = (parseFloat(current) / 100).toString();
+          justCalc = false;
+          updateDisplay();
+        } else if (a === "equals") {
+          pressEquals();
+        }
+      }
+
+      // ── Error ──────────────────────────────────────────────────────
+      function showError() {
+        resEl.className = "result error";
+        resEl.textContent = "Error";
+        current = "0";
+        prev = "";
+        op = null;
+        histEl.textContent = "";
+        justCalc = false;
+        clearOpHighlight();
+      }
+
+      // ── Operator key highlight ─────────────────────────────────────
+      function highlightOp(o) {
+        clearOpHighlight();
+        document.querySelectorAll(".key-op").forEach((btn) => {
+          if (btn.dataset.op === o) btn.classList.add("active-op");
+        });
+      }
+      function clearOpHighlight() {
+        document
+          .querySelectorAll(".key-op")
+          .forEach((btn) => btn.classList.remove("active-op"));
+      }
+
+      // ── Click handler ──────────────────────────────────────────────
+      document.getElementById("keypad").addEventListener("click", (e) => {
+        const b = e.target.closest(".key");
+        if (!b) return;
+        if (b.dataset.num !== undefined) pressNum(b.dataset.num);
+        else if (b.dataset.op) pressOp(b.dataset.op);
+        else if (b.dataset.action) pressAction(b.dataset.action);
+      });
+
+      // ── Keyboard handler ───────────────────────────────────────────
+      document.addEventListener("keydown", (e) => {
+        if (e.key >= "0" && e.key <= "9") {
+          pressNum(e.key);
+        } else if (e.key === ".") {
+          pressNum(".");
+        } else if (e.key === "+") {
+          pressOp("+");
+        } else if (e.key === "-") {
+          pressOp("−");
+        } else if (e.key === "*") {
+          pressOp("×");
+        } else if (e.key === "/") {
+          e.preventDefault();
+          pressOp("÷");
+        } else if (e.key === "Enter" || e.key === "=") {
+          pressEquals();
+        } else if (e.key === "Escape") {
+          pressAction("clear");
+        } else if (e.key === "%") {
+          pressAction("percent");
+        } else if (e.key === "Backspace") {
+          // BUG FIX: backspace should clear justCalc flag
+          justCalc = false;
+          if (current.length > 1 && current !== "Error") {
+            current = current.slice(0, -1);
+            if (current === "-") current = "0";
+          } else {
+            current = "0";
+          }
+          updateDisplay();
+        }
+      });
+
+      // Init
+      updateDisplay();
+    </script>
+  </body>
+</html>
